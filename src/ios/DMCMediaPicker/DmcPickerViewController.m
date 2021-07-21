@@ -2,11 +2,14 @@
 
 #import "DmcPickerViewController.h"
 #import "CollectionViewCell.h"
+#import "PlaceholderCollectionViewCell.h"
 #import "PreviewViewController.h"
 #import "AlbumListView.h"
 #import <Photos/Photos.h>
+#import <PhotosUI/PhotosUI.h>
 #define fDeviceWidth ([UIScreen mainScreen].bounds.size.width)  //设备高度的宏
 #define fDeviceHeight ([UIScreen mainScreen].bounds.size.height)
+#define SYSTEM_VERSION_LESS_THAN(v)                 ([[[UIDevice currentDevice] systemVersion] compare:v options:NSNumericSearch] == NSOrderedAscending)
 @interface DmcPickerViewController () <PHPhotoLibraryChangeObserver>{
      UIBarButtonItem *preview;
      int litemCount;
@@ -168,10 +171,19 @@
 
 -(void)requestPermission{
     //监测权限
-    if ([PHPhotoLibrary authorizationStatus] != PHAuthorizationStatusAuthorized) {
-        //NSLog(@"PLUGIN:  Not authorized I guess");
+    // NSLog(@"PLUGIN:  Request Permission called");
+    PHAuthorizationStatus currentStatus = nil;
+    if (SYSTEM_VERSION_LESS_THAN(@"14.0")) {
+        currentStatus = [PHPhotoLibrary authorizationStatus];
+    }
+    else{
+        currentStatus = [PHPhotoLibrary authorizationStatusForAccessLevel:PHAccessLevelReadWrite];
+    }
+
+    if (currentStatus != PHAuthorizationStatusAuthorized && currentStatus != PHAuthorizationStatusLimited) {
+        // NSLog(@"PLUGIN:  Not authorized I guess");
         [PHPhotoLibrary requestAuthorization:^(PHAuthorizationStatus status) {
-            //NSLog(@"PLUGIN:  In here, whatever this means");
+//             NSLog(@"PLUGIN:  In here, whatever this means");
             if ([PHPhotoLibrary authorizationStatus] != PHAuthorizationStatusAuthorized) {
                 //NSLog(@"PLUGIN:  STILL Not authorized I guess");
                 UIAlertController *alert = [UIAlertController alertControllerWithTitle:NSLocalizedString(@"Unable to access album",nil) message:NSLocalizedString(@"Please allow to access your album",nil) preferredStyle:UIAlertControllerStyleAlert];
@@ -187,8 +199,13 @@
             }
         }];
     }else {
+        // NSLog(@"PLUGIN:  We are authorized in some way");
         [self getAlassetData];
     }
+}
+
+-(void)showLimitedLibraryPicker{
+    [[PHPhotoLibrary sharedPhotoLibrary] presentLimitedLibraryPickerFromViewController:self];
 }
 
 -(void) getAlassetData{
@@ -305,6 +322,7 @@
 
         //注册cell和ReusableView（相当于头部）
         [_collectionView registerClass:[CollectionViewCell class] forCellWithReuseIdentifier:@"cell"];
+        [_collectionView registerClass:[PlaceholderCollectionViewCell class] forCellWithReuseIdentifier:@"placeholdercell"];
         //[_collectionView registerClass:[UICollectionReusableView class] forSupplementaryViewOfKind:UICollectionElementKindSectionHeader withReuseIdentifier:@"ReusableView"];
 
         //设置代理
@@ -327,60 +345,128 @@
 #pragma mark 定义展示的UICollectionViewCell的个数
 -(NSInteger)collectionView:(UICollectionView *)collectionView numberOfItemsInSection:(NSInteger)section
 {
-    return fetchResult.count;
+    if(section == 0) {
+        return fetchResult.count;
+    }
+    else{
+        //one item in the custom section.
+        return 1;
+    }
 }
 
 #pragma mark 定义展示的Section的个数
 -(NSInteger)numberOfSectionsInCollectionView:(UICollectionView *)collectionView
 {
-    return 1;
+    //top for pictures, bottom for extra controls if needed.
+    //We can toggle this value to hide the controls.
+    if (SYSTEM_VERSION_LESS_THAN(@"14.0")) {
+        //Special permissions not possible.  No helper controls.
+        return 1;
+    }
+    else{
+        PHAuthorizationStatus status = [PHPhotoLibrary authorizationStatusForAccessLevel:PHAccessLevelReadWrite];
+        if (status == PHAuthorizationStatusLimited) {
+            //Return the extra section containing helper controls
+            return 2;
+        }
+        else {
+            //No helper controls.  We're either fully authorized, or in an error state.
+            return 1;
+        }
+    }
+}
+
+-(void)editButtonTapped:(UITapGestureRecognizer *)tap {
+    [self showLimitedLibraryPicker];
 }
 
 #pragma mark 每个UICollectionView展示的内容
 -(UICollectionViewCell *)collectionView:(UICollectionView *)collectionView cellForItemAtIndexPath:(NSIndexPath *)indexPath
 {
-    static NSString *identify = @"cell";
-    CollectionViewCell *cell = [collectionView dequeueReusableCellWithReuseIdentifier:identify forIndexPath:indexPath];
-    [cell sizeToFit];
-    PHAsset *asset=fetchResult[indexPath.item];
-    PHImageRequestOptions *option = [[PHImageRequestOptions alloc] init];
-    option.networkAccessAllowed = YES;
-    [_manager requestImageForAsset:asset targetSize:CGSizeMake(200 , 200)  contentMode:PHImageContentModeAspectFill options:option
-                     resultHandler:^(UIImage * _Nullable result, NSDictionary * _Nullable info) {
-                        BOOL downloadFinined = (![[info objectForKey:PHImageCancelledKey] boolValue] && ![info objectForKey:PHImageErrorKey] && ![[info objectForKey:PHImageResultIsDegradedKey] boolValue]);
-                        if (downloadFinined && result) {
-                            cell.imgView.image = result;
-                        }
-                     }];
-    NSInteger i=[self isSelect:asset];
-    if(asset.mediaType==PHAssetMediaTypeVideo){
-        cell.labelL.hidden=NO;
-        cell.labelR.hidden=NO;
-        cell.labeGIF.hidden=YES;
+//     NSLog(@"cellForItemAtIndexPath %@", indexPath);
+//     NSLog(@"cellForItemAtIndexPath section %lu", indexPath.section);
+    if(indexPath.section == 0){
+        static NSString *identify = @"cell";
+        CollectionViewCell *cell = [collectionView dequeueReusableCellWithReuseIdentifier:identify forIndexPath:indexPath];
+        [cell sizeToFit];
+        PHAsset *asset=fetchResult[indexPath.item];
+        PHImageRequestOptions *option = [[PHImageRequestOptions alloc] init];
+        option.networkAccessAllowed = YES;
+        [_manager requestImageForAsset:asset targetSize:CGSizeMake(200 , 200)  contentMode:PHImageContentModeAspectFill options:option
+                         resultHandler:^(UIImage * _Nullable result, NSDictionary * _Nullable info) {
+                            BOOL downloadFinined = (![[info objectForKey:PHImageCancelledKey] boolValue] && ![info objectForKey:PHImageErrorKey] && ![[info objectForKey:PHImageResultIsDegradedKey] boolValue]);
+                            if (downloadFinined && result) {
+                                cell.imgView.image = result;
+                            }
+                         }];
+        NSInteger i=[self isSelect:asset];
+        if(asset.mediaType==PHAssetMediaTypeVideo){
+            cell.labelL.hidden=NO;
+            cell.labelR.hidden=NO;
+            cell.labeGIF.hidden=YES;
 
-        NSString *dtime=[NSString stringWithFormat:@"%.0f",asset.duration];
-        cell.labelL.text = [@" "stringByAppendingString:NSLocalizedString(@"Video",nil)];
-        //Uilable默认会去除尾部空格所以处理一下
-        NSMutableParagraphStyle *style = [[NSParagraphStyle defaultParagraphStyle] mutableCopy];
-        style.tailIndent = -3.0f;
-        style.alignment=NSTextAlignmentRight;
-        NSString *dtimeStr=[self getNewTimeFromDurationSecond:dtime.integerValue];
-        NSAttributedString *attrTextR = [[NSAttributedString alloc] initWithString:dtimeStr attributes:@{ NSParagraphStyleAttributeName : style}];
-        cell.labelR.attributedText=attrTextR;
-    }else{
-        NSString *fileName =[asset valueForKey:@"filename"];
-        NSString * fileExtension = [fileName pathExtension];
-        cell.labeGIF.hidden=[@"GIF" caseInsensitiveCompare:fileExtension]?YES:NO;
-        cell.labelL.hidden=YES;
-        cell.labelR.hidden=YES;
-    }
+            NSString *dtime=[NSString stringWithFormat:@"%.0f",asset.duration];
+            cell.labelL.text = [@" "stringByAppendingString:NSLocalizedString(@"Video",nil)];
+            //Uilable默认会去除尾部空格所以处理一下
+            NSMutableParagraphStyle *style = [[NSParagraphStyle defaultParagraphStyle] mutableCopy];
+            style.tailIndent = -3.0f;
+            style.alignment=NSTextAlignmentRight;
+            NSString *dtimeStr=[self getNewTimeFromDurationSecond:dtime.integerValue];
+            NSAttributedString *attrTextR = [[NSAttributedString alloc] initWithString:dtimeStr attributes:@{ NSParagraphStyleAttributeName : style}];
+            cell.labelR.attributedText=attrTextR;
+        }else{
+            NSString *fileName =[asset valueForKey:@"filename"];
+            NSString * fileExtension = [fileName pathExtension];
+            cell.labeGIF.hidden=[@"GIF" caseInsensitiveCompare:fileExtension]?YES:NO;
+            cell.labelL.hidden=YES;
+            cell.labelR.hidden=YES;
+        }
 
-    if(i<0){
-        [self hidenSelectView:cell];
-    }else{
-        [self showSelectView:cell];
+        if(i<0){
+            [self hidenSelectView:cell];
+        }else{
+            [self showSelectView:cell];
+        }
+        return cell;
     }
-    return cell;
+    else{
+        static NSString *identify = @"placeholdercell";
+        PlaceholderCollectionViewCell *cell = [collectionView dequeueReusableCellWithReuseIdentifier:identify forIndexPath:indexPath];
+
+        CGFloat windowWidth = CGRectGetWidth(self.view.bounds);
+
+//         NSLog(@"Adding my button %f", windowWidth);
+        cell.frame = CGRectMake(cell.frame.origin.x, cell.frame.origin.y, windowWidth ,cell.frame.size.height);
+
+        UILabel *myLabel = [[UILabel alloc]initWithFrame:CGRectMake(0, 0, windowWidth, 40)];
+        [myLabel setBackgroundColor:[UIColor clearColor]];
+        [myLabel setText:NSLocalizedString(@"Don't see what you're looking for?",nil)];
+        myLabel.textColor=[UIColor colorWithRed:68/255.0
+                                          green:68/255.0
+                                           blue:68/255.0
+                                          alpha:1];
+        myLabel.textAlignment = NSTextAlignmentCenter;
+        [cell addSubview:myLabel];
+
+        UIButton *button = [UIButton buttonWithType:UIButtonTypeSystem];
+        [button addTarget:self
+                   action:@selector(editButtonTapped:)
+         forControlEvents:UIControlEventTouchUpInside];
+        [button setTitle:NSLocalizedString(@"Select More Photos",nil) forState:UIControlStateNormal];
+        button.frame = CGRectMake(20, 40, windowWidth - 40,40);
+
+        [button setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
+
+        button.layer.cornerRadius = 4;
+        button.backgroundColor= [UIColor colorWithRed:0/255.0
+                                                green:124/255.0
+                                                 blue:211/255.0
+                                                alpha:1];
+
+        [cell addSubview:button];
+
+        return cell;
+    }
 }
 
 
