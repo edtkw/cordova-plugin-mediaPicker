@@ -351,7 +351,10 @@
 #pragma mark 定义展示的UICollectionViewCell的个数
 -(NSInteger)collectionView:(UICollectionView *)collectionView numberOfItemsInSection:(NSInteger)section
 {
-    if(section == 0) {
+    if(section == 0){
+        return 1; //placeholder for label
+    }
+    else if(section == 1) {
         return fetchResult.count;
     }
     else{
@@ -373,7 +376,7 @@
         PHAuthorizationStatus status = [PHPhotoLibrary authorizationStatusForAccessLevel:PHAccessLevelReadWrite];
         if (status == PHAuthorizationStatusLimited) {
             //Return the extra section containing helper controls
-            return 2;
+            return 3;
         }
         else {
             //No helper controls.  We're either fully authorized, or in an error state.
@@ -386,12 +389,49 @@
     [self showLimitedLibraryPicker];
 }
 
+- (CGSize)collectionView:(UICollectionView *)collectionView layout:(UICollectionViewLayout *)collectionViewLayout sizeForItemAtIndexPath:(NSIndexPath *)indexPath
+{
+//     NSLog(@"sizeForItemAtIndexPath %@", indexPath);
+    //This method override is needed because we have a fake control in section 0 now.indexPath
+    //This apparently means that the layout needs to know the item size this way.  I can't set it later
+    if(indexPath.section == 0){
+        return CGSizeMake(CGRectGetWidth(collectionView.frame), (40));
+    }
+    else if(indexPath.section == 1){
+        //pulled from initialization above.
+        return CGSizeMake((fDeviceWidth-(litemCount-1))/litemCount, (fDeviceWidth-(litemCount-1))/litemCount);
+    }
+    else{
+        return CGSizeMake(CGRectGetWidth(collectionView.frame), (80));
+    }
+}
+
 #pragma mark 每个UICollectionView展示的内容
 -(UICollectionViewCell *)collectionView:(UICollectionView *)collectionView cellForItemAtIndexPath:(NSIndexPath *)indexPath
 {
 //     NSLog(@"cellForItemAtIndexPath %@", indexPath);
 //     NSLog(@"cellForItemAtIndexPath section %lu", indexPath.section);
     if(indexPath.section == 0){
+         static NSString *identify = @"placeholdercell";
+        PlaceholderCollectionViewCell *cell = [collectionView dequeueReusableCellWithReuseIdentifier:identify forIndexPath:indexPath];
+
+        CGFloat windowWidth = CGRectGetWidth(self.view.bounds);
+        cell.frame = CGRectMake(cell.frame.origin.x, cell.frame.origin.y, windowWidth ,40);
+
+        UILabel *myLabel = [[UILabel alloc]initWithFrame:CGRectMake(0, 2, windowWidth, 40)];
+        // NSLog(@"top controls label %@", myLabel);
+        [myLabel setBackgroundColor:[UIColor clearColor]];
+        [myLabel setText:NSLocalizedString(@"Select Images to Upload",nil)];
+        myLabel.textColor=[UIColor colorWithRed:68/255.0
+                                          green:68/255.0
+                                           blue:68/255.0
+                                          alpha:1];
+        myLabel.textAlignment = NSTextAlignmentCenter;
+        [cell addSubview:myLabel];
+
+        return cell;
+    }
+    else if(indexPath.section == 1){
         static NSString *identify = @"cell";
         CollectionViewCell *cell = [collectionView dequeueReusableCellWithReuseIdentifier:identify forIndexPath:indexPath];
         [cell sizeToFit];
@@ -478,7 +518,7 @@
 
     //UICollectionView被选中时调用的方法
 -( void )collectionView:( UICollectionView *)collectionView didSelectItemAtIndexPath:( NSIndexPath *)indexPath{
-    if(indexPath.section == 0){
+    if(indexPath.section == 1){
         PHAsset * asset=fetchResult[indexPath.row];
 
         // NSLog(@"did select item here! %@", asset);
