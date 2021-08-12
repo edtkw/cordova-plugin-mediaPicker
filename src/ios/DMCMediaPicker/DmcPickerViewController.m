@@ -41,14 +41,6 @@
     [self requestPermission];
 }
 
-- (void)photoLibraryDidChange:(PHChange *)changeInstance
-{
-//     NSLog(@"PLUGIN: photoLibraryDidChange");
-    dispatch_async(dispatch_get_main_queue(), ^{
-        [self getAlassetData];
-    });
-}
-
 -(void)initView{
     self.view.backgroundColor=[UIColor whiteColor];
     UIBarButtonItem *rightButtonItem = [[UIBarButtonItem alloc] initWithTitle:NSLocalizedString(@"Done",nil) style:UIBarButtonItemStylePlain target:self action:@selector(done)];
@@ -58,6 +50,8 @@
 
     [PHPhotoLibrary.sharedPhotoLibrary registerChangeObserver:self];
     //[self setTitleView:self.selectMode==102?NSLocalizedString(@"Video",nil):NSLocalizedString(@"All",nil)];
+
+    //NSLog(@"PLUGIN: init view called!!!!");
 
     //bottom bar
     [self.navigationController  setToolbarHidden:NO animated:YES];
@@ -202,6 +196,18 @@
         // NSLog(@"PLUGIN:  We are authorized in some way");
         [self getAlassetData];
     }
+}
+
+- (void)photoLibraryDidChange:(PHChange *)changeInstance
+{
+    // NSLog(@"PLUGIN: photoLibraryDidChange");
+
+    dispatch_async(dispatch_get_main_queue(), ^{
+        [self getAlassetData];
+        [self setBtnStatus];
+
+        // NSLog(@"PLUGIN: done refreshing library");
+    });
 }
 
 -(void)showLimitedLibraryPicker{
@@ -472,25 +478,32 @@
 
     //UICollectionView被选中时调用的方法
 -( void )collectionView:( UICollectionView *)collectionView didSelectItemAtIndexPath:( NSIndexPath *)indexPath{
+    if(indexPath.section == 0){
+        PHAsset * asset=fetchResult[indexPath.row];
 
-    PHAsset * asset=fetchResult[indexPath.row];
-    NSInteger i=[self isSelect:asset];
-    CollectionViewCell *cell = (CollectionViewCell *)[collectionView cellForItemAtIndexPath:indexPath];
+        // NSLog(@"did select item here! %@", asset);
 
-    if([selectArray count] >= self.maxSelectCount && i < 0){
-        [self alertMax];
-    }else{
-        if([selectArray count] > self.maxSelectCount){
+        NSInteger i=[self isSelect:asset];
+        CollectionViewCell *cell = (CollectionViewCell *)[collectionView cellForItemAtIndexPath:indexPath];
+
+        if([selectArray count] >= self.maxSelectCount && i < 0){
             [self alertMax];
-        }else if([self assetFileSize:asset] > self.maxSelectSize) {
-            [self alertSize];
-        } else {
-            i<0?[selectArray addObject:asset]:[selectArray removeObject:asset];
-            i<0?[self showSelectView:cell]:[self hidenSelectView:cell];
+        }else{
+            if([selectArray count] > self.maxSelectCount){
+                [self alertMax];
+            }else if([self assetFileSize:asset] > self.maxSelectSize) {
+                [self alertSize];
+            } else {
+                i<0?[selectArray addObject:asset]:[selectArray removeObject:asset];
+                i<0?[self showSelectView:cell]:[self hidenSelectView:cell];
+            }
         }
-    }
 
-    [self setBtnStatus];
+        [self setBtnStatus];
+    }
+    else{
+        // NSLog(@"did select item for unwatched section");
+    }
 }
 
 -(void)setBtnStatus{
