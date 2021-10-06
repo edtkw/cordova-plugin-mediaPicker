@@ -165,15 +165,20 @@
 
 -(void)requestPermission{
     //监测权限
-    // NSLog(@"PLUGIN:  Request Permission called");
+//     NSLog(@"PLUGIN:  Request Permission called");
     PHAuthorizationStatus currentStatus = nil;
     if (SYSTEM_VERSION_LESS_THAN(@"14.0")) {
+//         NSLog(@"PLUGIN: we are less than 14.0");
         currentStatus = [PHPhotoLibrary authorizationStatus];
     }
     else{
+//         NSLog(@"PLUGIN: we are greater than 14.0");
         currentStatus = [PHPhotoLibrary authorizationStatusForAccessLevel:PHAccessLevelReadWrite];
     }
 
+//     NSLog(@"PLUGIN: what is current status %ld", currentStatus);
+//     NSLog(@"PLUGIN: PHAuthorizationStatusAuthorized %ld", PHAuthorizationStatusAuthorized);
+//     NSLog(@"PLUGIN: PHAuthorizationStatusLimited %ld", PHAuthorizationStatusLimited);
     if (currentStatus != PHAuthorizationStatusAuthorized && currentStatus != PHAuthorizationStatusLimited) {
         // NSLog(@"PLUGIN:  Not authorized I guess");
         [PHPhotoLibrary requestAuthorization:^(PHAuthorizationStatus status) {
@@ -193,24 +198,25 @@
             }
         }];
     }else {
-        // NSLog(@"PLUGIN:  We are authorized in some way");
+//         NSLog(@"PLUGIN:  We are authorized in some way");
         [self getAlassetData];
     }
 }
 
 - (void)photoLibraryDidChange:(PHChange *)changeInstance
 {
-    // NSLog(@"PLUGIN: photoLibraryDidChange");
+//     NSLog(@"PLUGIN: photoLibraryDidChange");
 
     dispatch_async(dispatch_get_main_queue(), ^{
         [self getAlassetData];
         [self setBtnStatus];
 
-        // NSLog(@"PLUGIN: done refreshing library");
+//         NSLog(@"PLUGIN: done refreshing library");
     });
 }
 
 -(void)showLimitedLibraryPicker{
+//     NSLog(@"PLUGIN: showLimitedLibraryPicker");
     [[PHPhotoLibrary sharedPhotoLibrary] presentLimitedLibraryPickerFromViewController:self];
 }
 
@@ -220,7 +226,7 @@
     albumsTitlelist=[[NSMutableArray alloc] init];
     dataSource=[[NSMutableArray alloc] init];
 
-
+//     NSLog(@"PLUGIN:  getAlassetData");
     //获取相册
     PHFetchResult *smartAlbums = [PHAssetCollection       fetchAssetCollectionsWithType:PHAssetCollectionTypeSmartAlbum
                                                                                 subtype:PHAssetCollectionSubtypeAlbumRegular options:nil];
@@ -233,6 +239,8 @@
     PHFetchOptions *options = [[PHFetchOptions alloc] init];
     options.sortDescriptors = @[[NSSortDescriptor sortDescriptorWithKey:@"creationDate" ascending:NO]];
 
+//     NSLog(@"PLUGIN:  getAlassetData past init");
+
     if(self.selectMode==100){
         options.predicate = [NSPredicate predicateWithFormat:@"mediaType == %ld", PHAssetMediaTypeImage];
     }else if(self.selectMode==102){
@@ -241,14 +249,25 @@
 
     int defaultSelection, i = 0; //为了进入选择界面默认显示CameraRoll下的图片
 
+//     NSLog(@"PLUGIN:  getAlassetData top of loop");
+
     for (PHFetchResult *fetchResult in allAlbums) {
+//         NSLog(@"PLUGIN:  getAlassetData in loop album");
         for (PHAssetCollection *collection in fetchResult) {
             // 有可能是PHCollectionList类的的对象，过滤掉
+//             NSLog(@"PLUGIN:  getAlassetData in loop collection");
+
             if (![collection isKindOfClass:[PHAssetCollection class]]) continue;
+//             NSLog(@"PLUGIN:  getAlassetData in loop collection, made it past isKindOfClass");
             // 过滤空相册
             if (collection.estimatedAssetCount <= 0) continue;
+            //NSLog(@"PLUGIN:  getAlassetData in loop collection, made it past estimatedAssetCount");
             if (collection.assetCollectionSubtype == PHAssetCollectionSubtypeSmartAlbumAllHidden) continue; //包含隐藏照片或视频的文件夹
+//             NSLog(@"PLUGIN:  getAlassetData in loop collection, made it past assetCollectionSubtype");
             if (collection.assetCollectionSubtype == 1000000201) continue; //『最近删除』相册
+
+//             NSLog(@"PLUGIN:  getAlassetData in loop collection, made it past the continues");
+
             if (collection.assetCollectionSubtype == PHAssetCollectionSubtypeSmartAlbumUserLibrary) {
                 defaultSelection = i;
             }
@@ -260,6 +279,8 @@
             }
         }
     }
+
+//     NSLog(@"PLUGIN:  getAlassetData after loop");
 
     _manager = [PHImageManager defaultManager];
     [self show: defaultSelection];
@@ -370,17 +391,20 @@
     //We can toggle this value to hide the controls.
     if (SYSTEM_VERSION_LESS_THAN(@"14.0")) {
         //Special permissions not possible.  No helper controls.
-        return 1;
+//         NSLog(@"numberOfSectionsInCollectionView less than 14");
+        return 2;
     }
     else{
         PHAuthorizationStatus status = [PHPhotoLibrary authorizationStatusForAccessLevel:PHAccessLevelReadWrite];
         if (status == PHAuthorizationStatusLimited) {
+//             NSLog(@"numberOfSectionsInCollectionView returning 3");
             //Return the extra section containing helper controls
             return 3;
         }
         else {
+//             NSLog(@"numberOfSectionsInCollectionView not limited");
             //No helper controls.  We're either fully authorized, or in an error state.
-            return 1;
+            return 2;
         }
     }
 }
@@ -398,6 +422,7 @@
         return CGSizeMake(CGRectGetWidth(collectionView.frame), (40));
     }
     else if(indexPath.section == 1){
+//         NSLog(@"sizeForItemAtIndexPath, item count %d", litemCount);
         //pulled from initialization above.
         return CGSizeMake((fDeviceWidth-(litemCount-1))/litemCount, (fDeviceWidth-(litemCount-1))/litemCount);
     }
