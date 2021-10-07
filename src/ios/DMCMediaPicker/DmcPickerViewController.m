@@ -3,6 +3,7 @@
 #import "DmcPickerViewController.h"
 #import "CollectionViewCell.h"
 #import "PlaceholderCollectionViewCell.h"
+#import "ShowMorePhotosCollectionViewCell.h"
 #import "PreviewViewController.h"
 #import "AlbumListView.h"
 #import <Photos/Photos.h>
@@ -350,6 +351,7 @@
         //注册cell和ReusableView（相当于头部）
         [_collectionView registerClass:[CollectionViewCell class] forCellWithReuseIdentifier:@"cell"];
         [_collectionView registerClass:[PlaceholderCollectionViewCell class] forCellWithReuseIdentifier:@"placeholdercell"];
+        [_collectionView registerClass:[ShowMorePhotosCollectionViewCell class] forCellWithReuseIdentifier:@"showmorephotoscell"];
         //[_collectionView registerClass:[UICollectionReusableView class] forSupplementaryViewOfKind:UICollectionElementKindSectionHeader withReuseIdentifier:@"ReusableView"];
 
         //设置代理
@@ -409,7 +411,8 @@
     }
 }
 
--(void)editButtonTapped:(UITapGestureRecognizer *)tap {
+-(void)editButtonTapped{
+//     NSLog(@"editButtonTapped in ctrl");
     [self showLimitedLibraryPicker];
 }
 
@@ -442,17 +445,6 @@
 
         CGFloat windowWidth = CGRectGetWidth(self.view.bounds);
         cell.frame = CGRectMake(cell.frame.origin.x, cell.frame.origin.y, windowWidth ,40);
-
-        UILabel *myLabel = [[UILabel alloc]initWithFrame:CGRectMake(0, 2, windowWidth, 40)];
-        // NSLog(@"top controls label %@", myLabel);
-        [myLabel setBackgroundColor:[UIColor clearColor]];
-        [myLabel setText:NSLocalizedString(@"Select Images to Upload",nil)];
-        myLabel.textColor=[UIColor colorWithRed:68/255.0
-                                          green:68/255.0
-                                           blue:68/255.0
-                                          alpha:1];
-        myLabel.textAlignment = NSTextAlignmentCenter;
-        [cell addSubview:myLabel];
 
         return cell;
     }
@@ -501,40 +493,15 @@
         return cell;
     }
     else{
-        static NSString *identify = @"placeholdercell";
-        PlaceholderCollectionViewCell *cell = [collectionView dequeueReusableCellWithReuseIdentifier:identify forIndexPath:indexPath];
+        static NSString *identify = @"showmorephotoscell";
+        ShowMorePhotosCollectionViewCell *cell = [collectionView dequeueReusableCellWithReuseIdentifier:identify forIndexPath:indexPath];
 
         CGFloat windowWidth = CGRectGetWidth(self.view.bounds);
 
 //         NSLog(@"Adding my button %f", windowWidth);
         cell.frame = CGRectMake(cell.frame.origin.x, cell.frame.origin.y, windowWidth ,cell.frame.size.height);
 
-        UILabel *myLabel = [[UILabel alloc]initWithFrame:CGRectMake(0, 0, windowWidth, 40)];
-        [myLabel setBackgroundColor:[UIColor clearColor]];
-        [myLabel setText:NSLocalizedString(@"Don't see what you're looking for?",nil)];
-        myLabel.textColor=[UIColor colorWithRed:68/255.0
-                                          green:68/255.0
-                                           blue:68/255.0
-                                          alpha:1];
-        myLabel.textAlignment = NSTextAlignmentCenter;
-        [cell addSubview:myLabel];
-
-        UIButton *button = [UIButton buttonWithType:UIButtonTypeSystem];
-        [button addTarget:self
-                   action:@selector(editButtonTapped:)
-         forControlEvents:UIControlEventTouchUpInside];
-        [button setTitle:NSLocalizedString(@"Select More Photos",nil) forState:UIControlStateNormal];
-        button.frame = CGRectMake(20, 40, windowWidth - 40,40);
-
-        [button setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
-
-        button.layer.cornerRadius = 4;
-        button.backgroundColor= [UIColor colorWithRed:0/255.0
-                                                green:124/255.0
-                                                 blue:211/255.0
-                                                alpha:1];
-
-        [cell addSubview:button];
+        cell._delegate = self;
 
         return cell;
     }
@@ -565,9 +532,6 @@
         }
 
         [self setBtnStatus];
-    }
-    else{
-        // NSLog(@"did select item for unwatched section");
     }
 }
 

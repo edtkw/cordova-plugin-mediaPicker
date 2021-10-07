@@ -35,6 +35,8 @@
     <source-file src="src/ios/DMCMediaPicker/CollectionViewCell.m"/>
     <header-file src="src/ios/DMCMediaPicker/PlaceholderCollectionViewCell.h" />
     <source-file src="src/ios/DMCMediaPicker/PlaceholderCollectionViewCell.m"/>
+    <header-file src="src/ios/DMCMediaPicker/ShowMorePhotosCollectionViewCell.h" />
+    <source-file src="src/ios/DMCMediaPicker/ShowMorePhotosCollectionViewCell.m"/>
     <header-file src="src/ios/DMCMediaPicker/DmcPickerViewController.h" />
     <source-file src="src/ios/DMCMediaPicker/DmcPickerViewController.m"/>
     <header-file src="src/ios/DMCMediaPicker/PreviewCell.h" />

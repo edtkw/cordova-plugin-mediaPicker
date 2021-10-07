@@ -4,4 +4,5 @@
 
 
 @interface PlaceholderCollectionViewCell : UICollectionViewCell
+    @property(nonatomic ,strong)UILabel *myLabel;
     @end
