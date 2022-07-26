@@ -1,0 +1,14 @@
+"Cancel" = "Anular";
+"Done" = "Realizado";
+"All" = "Todas las fotos";
+"Video" = "Vídeo";
+"ok" = "OK";
+"maxSelectAlert" = "Sólo puedes seleccionar el %d de las imágenes";
+"maxSizeAlert" = "Sólo puedes seleccionar imágenes con un tamaño máximo de %.02f MB";
+"Unable to access album" = "No se puede acceder al álbum";
+"Please allow to access your album" = "Por favor, permite el acceso a tu álbum en \"Configuración -> Privacidad -> Álbum\"";
+"Setting" = "Parámetros";
+"Preview" = "Resumen";
+"Don't see what you're looking for?" = "¿No ves lo que buscas?";
+"Select More Photos" = "Selecciona más fotos";
+"photo_download_failed" = "Se ha producido un error al cargar las fotos seleccionadas en tu Fototeca de iCloud. El problema puede estar relacionado con una mala conexión a Internet. Por favor, comprueba tu conexión a Internet e inténtalo de nuevo.";
