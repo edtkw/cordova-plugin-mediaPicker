@@ -53,6 +53,8 @@
 
     <resource-file src="src/ios/DMCMediaPicker/dmcPicker.bundle"/>
     <resource-file src="src/ios/DMCMediaPicker/en.lproj"/>
+    <resource-file src="src/ios/DMCMediaPicker/fr.lproj"/>
+    <resource-file src="src/ios/DMCMediaPicker/es.lproj"/>
     <resource-file src="src/ios/DMCMediaPicker/zh-Hans.lproj"/>
     <resource-file src="src/ios/DMCMediaPicker/pt-BR.lproj"/>
     <resource-file src="src/ios/DMCMediaPicker/pt-PT.lproj"/>
