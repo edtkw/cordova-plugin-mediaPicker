@@ -1,0 +1,7 @@
+ext.repos = {
+    google()
+    mavenCentral()
+    maven { //add this 
+        url 'https://jitpack.io' //add this 
+    }
+}
